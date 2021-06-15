@@ -115,6 +115,6 @@ With a distribution of estimates under the null now estimated, we can compute po
     # 10 x       0.9  1   
     # 11 x       1    1   
 
-The output denotes the calculated power to reject the null hypotheses when the true effect is the effect noted by `delta`. These results can then be easily plotted, used to compute minimum detectable effects, etc.
+The output denotes the calculated power to reject the null hypotheses when the true effect is the effect noted by `delta`. These results can then be easily plotted, used to compute minimum detectable effects, etc. By default, `evaluate()` sets the level of the test for rejecting the null to `level = 0.05`. If you'd like to set a more restrictive, or more modest level, simply specify `level = 0.01` or `level = 0.1` respectively.
 
-The power of this overall approach and set of tools is that it permits specifying, and computing power for, a diverse array of complex designs and data-generating processes. 
+The example shown here is obviously quite basic. Nonetheless, the power of this overall approach and set of tools is that it permits specifying, and computing power for, a diverse array of complex designs and data-generating processes. Whatever one can conceive of, `seerrr` "sees all." 
