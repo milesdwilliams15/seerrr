@@ -38,13 +38,13 @@ The first, `simdata()`, generates a list of dataset replicates. It is a wrapper 
         x = rbinom(n = N, size = 1, prob = 0.5)
       )
     sims # print results
-    #[[1]]
-    #  ID            y x
-    #  1  1 -0.8591237 1
-    #  2  2  0.9053669 1
-    #  3  3  0.1507227 1
-    #  4  4 -1.3261642 1
-    #  5  5 -0.8358375 1
+    #   [[1]]
+    #     ID            y x
+    #     1  1 -0.8591237 1
+    #     2  2  0.9053669 1
+    #     3  3  0.1507227 1
+    #     4  4 -1.3261642 1
+    #     5  5 -0.8358375 1
     #  
     #  [[2]]
     #    ID           y x
@@ -82,7 +82,7 @@ By default, `estimate()` relies on `lm_robust()` from the `estimatr` package. An
         estimator = lm
       )
 
-Or, if you would like to modify any of the default settings of `lm_robust`---say you want to change the standard errors to HC1 errors rather than the default HC2---you could write
+Or, if you would like to modify any of the default settings of `lm_robust`---say you want to change the standard errors to HC1 errors rather than the default HC2---you could specify a new function with a different default for the `se_type` command in `lm_robust`:
 
     hc1_robust <- function(...) lm_robust(..., se_type = "stata")
     estimate(
