@@ -4,14 +4,20 @@
 \alias{evaluate}
 \title{Evaluate Power for Select Variables}
 \usage{
-evaluate(data, delta, level = 0.05)
+evaluate(data, delta, level = 0.05, power = 0.8, what = "power", truth = 0)
 }
 \arguments{
 \item{data}{The output from estimate().}
 
-\item{delta}{A numeric vector of effect sizes over which to calculate power.}
+\item{delta}{A numeric vector of effect sizes over which to calculate power. If \code{what = "mde"} this is the range over which the minimum detectable effect (MDE) is computed. If the MDE lies outside this range, an error message is returned.}
 
 \item{level}{The level of the statistical test. Default is 0.05.}
+
+\item{power}{The desired power to detect an effect. Default is 0.8.}
+
+\item{what}{A character string indicating what to evaluate. By default \code{"power"} is evaluated. Other options include \code{"mde"} for the minimum detectable effect (MDE) and \code{"bias"} for evaluating the performance of an estimator with respect to average bias, coverage, power, and mean squared error.}
+
+\item{truth}{If \code{what = "bias"}, performance is evaluated relative to the true parameter estimate. This is an integer value and is 0 by default.}
 }
 \value{
 Returns computed power for each variable of interest over the range of use-specified effect sizes.

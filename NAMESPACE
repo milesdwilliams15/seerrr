@@ -2,4 +2,4 @@
 
 export(estimate)
 export(evaluate)
-export(simdata)
+export(simulate)

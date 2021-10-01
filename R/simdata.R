@@ -9,7 +9,7 @@
 #' @return The function returns a list of dataset replicates.
 #'
 #' @export
-simdata <-
+simulate <-
   function(
     R = 200,
     N = 500,
