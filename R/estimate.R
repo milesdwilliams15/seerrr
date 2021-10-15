@@ -19,13 +19,13 @@ estimate <-
     estimator = estimatr::lm_robust,
     ...
   ) {
+    fun <- function(...) estimator(...)
     est <-
       data %>%
       purrr::map_dfr(
-        ~ estimator(
+        ~ fun(
           formula,
-          data = .,
-          ...
+          data = .
         ) %>%
           estimatr::tidy() %>%
           dplyr::filter(
