@@ -4,7 +4,7 @@
 \alias{estimate}
 \title{Estimate Results Estimated for Multiple Dataset Replicates}
 \usage{
-estimate(data = NULL, formula, vars, estimator = estimatr::lm_robust)
+estimate(data = NULL, formula, vars, estimator = estimatr::lm_robust, ...)
 }
 \arguments{
 \item{data}{A list of dataset replicates produced with simdata().}
@@ -14,6 +14,8 @@ estimate(data = NULL, formula, vars, estimator = estimatr::lm_robust)
 \item{vars}{A vector or single character string indicating the names of covariates to return results for.}
 
 \item{estimator}{The estimator to be used for estimation. Default is estimatr::lm_robust.}
+
+\item{...}{Additional commands for the selected estimator function.}
 }
 \value{
 The function returns a tidy dataframe of estimates for each selected variable for each dataset replicate.

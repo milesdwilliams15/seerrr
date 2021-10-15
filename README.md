@@ -2,12 +2,18 @@
 
 ![R-version](https://img.shields.io/badge/R%20%3E%3D-3.4.3-brightgreen)
 ![updated](https://img.shields.io/badge/last%20update-10--01--2021-brightgreen)
-![version](https://img.shields.io/badge/version-0.0.1.2000-brightgreen)
+![version](https://img.shields.io/badge/version-0.0.1.2100-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-red)
 ![encoding](https://img.shields.io/badge/encoding-UTF--8-red)
 [![orchid](https://img.shields.io/badge/ORCID-0000--0003--0192--5542-brightgreen)](https://orcid.org/0000-0003-0192-5542)
 
-`seerrr` is a package that supports computational power analysis in R. As of 10/01/2021, it has been updated to also support direct estimation of minimum detectable effects (MDEs) and for evaluating the bias, mean squared error (MSE), coverage, and power of an estimator. 
+`seerrr` is a package that supports computational power analysis in R. 
+
+
+### Updates
+
+  - As of 10/01/2021, it has been updated to also support direct estimation of minimum detectable effects (MDEs) and for evaluating the bias, mean squared error (MSE), coverage, and power of an estimator. 
+  - As of 10/15/2021, `estimate()` is now set up to pass any additional user specified commands to the selected estimator function.
 
 The package is constructed around a simple work-flow:
 
@@ -86,14 +92,13 @@ By default, `estimate()` relies on `lm_robust()` from the `estimatr` package. An
         estimator = lm
       )
 
-Or, if you would like to modify any of the default settings of `lm_robust`---say you want to change the standard errors to HC1 errors rather than the default HC2---you could specify a new function with a different default for the `se_type` command in `lm_robust`:
+Or, if you would like to modify any of the default settings of `lm_robust`---say you want to change the standard errors to HC1 errors rather than the default HC2---you can simply include that command in `estimate()` and it will pass that command to the estimator function. In `lm_robust` to get HC1 standard errors we simply set `se_type = "stata"`. By specifying this in `estimate` this command gets passed to `lm_robust` "under the hood":
 
-    hc1_robust <- function(...) lm_robust(..., se_type = "stata")
     estimate(
         data = sims,
         y ~ x,
         vars = "x",
-        estimator = hc1_robust
+        se_type = "stata"
       )
 
 With a distribution of estimates under the null now estimated, we can compute power over a range of possible effect sizes with the `evaluate()` function. This is done by supplying a vector of alternative effect sizes to the `delta` argument:

@@ -6,6 +6,7 @@
 #' @param formula A formula object specifying the right- and left-hand side variables to be used in estimation.
 #' @param vars A vector or single character string indicating the names of covariates to return results for.
 #' @param estimator The estimator to be used for estimation. Default is estimatr::lm_robust.
+#' @param ... Additional commands for the selected estimator function.
 #'
 #' @return The function returns a tidy dataframe of estimates for each selected variable for each dataset replicate.
 #'
@@ -15,14 +16,16 @@ estimate <-
     data = NULL,
     formula,
     vars,
-    estimator = estimatr::lm_robust
+    estimator = estimatr::lm_robust,
+    ...
   ) {
     est <-
       data %>%
       purrr::map_dfr(
         ~ estimator(
           formula,
-          data = .
+          data = .,
+          ...
         ) %>%
           estimatr::tidy() %>%
           dplyr::filter(
