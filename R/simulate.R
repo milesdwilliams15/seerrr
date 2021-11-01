@@ -28,7 +28,7 @@ simulate <-
         n = R,
         expr = design()
       )
-    for(i in 1:length(rep)) rep[[i]] %>%
+    for(i in 1:length(rep)) rep[[i]] <- rep[[i]] %>%
       mutate(sim = i)
     return(rep)
   }
