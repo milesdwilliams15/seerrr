@@ -25,7 +25,7 @@ simulate <-
       }
     rep <-
       replicate(
-        n = N,
+        n = R,
         expr = design()
       )
     for(i in 1:length(rep)) rep[[i]] %>%
