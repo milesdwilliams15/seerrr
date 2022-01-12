@@ -72,16 +72,29 @@ evaluate <-
         )
       return(mde)
     } else if(what == "bias") {
+      if(truth > 0) {
+        if(length(truth)!=length(unique(data$term))) {
+          print("True values of parameters does not match the number of parameters.")
+          stop()
+        }
+      }
       bias <- data %>%
+        dplyr::mutate(
+          truth = rep(truth, len = dplyr::n())
+        ) %>%
         dplyr::group_by(.data$term) %>%
         dplyr::summarize(
+          average = mean(.data$estimate),
+          variance = var(.data$estimate),
+          std.error = mean(.data$std.error),
           bias = mean(.data$estimate - truth),
           mse = mean((.data$estimate - truth)^2),
           coverage = mean(
             ((.data$estimate - 1.96 * .data$std.error) <= truth) &
               ((.data$estimate + 1.96 * .data$std.error) >= truth)
           ),
-          power = mean(.data$p.value <= level)
+          power = mean(.data$p.value <= level),
+          .groups = "drop"
         )
       return(bias)
     }
