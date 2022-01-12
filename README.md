@@ -33,7 +33,7 @@ There is currently only a development version of `seerrr` available. To install 
     library(seerrr)
 
 # Usage
-To perform power analysis with `seerrr`, the package provides users with three functions:
+The `seerrr` package centers on three functions:
 
   - `simulate()`[^1]
   - `estimate()`
@@ -69,7 +69,7 @@ The first, `simulate()`, generates a list of dataset replicates. It is a wrapper
 
 The object `sims` is just a list of `R = 100` datasets.
 
-After simulating the data, one can then use `estimate()` to generate a distribution of estimates for the effect of `x` on `y`. Since by design there is no relationship (both are just random variables), `estimate()` provides us with a distribution of effects under the null hypothesis of no effect. 
+After simulating the data, one can then use `estimate()` to generate a distribution of estimates for the effect of `x` on `y` based on each of the sample replicates:
 
     ests <-
       estimate(
@@ -104,12 +104,37 @@ Or, if you would like to modify any of the default settings of `lm_robust`---say
         se_type = "stata"
       )
 
-With a distribution of estimates under the null now estimated, we can compute power over a range of possible effect sizes with the `evaluate()` function. This is done by supplying a vector of alternative effect sizes to the `delta` argument:
+## Types of Evaluation
+The next function in the `seerrr` workflow, `evaluate()`, can be used to return different summary information depending on the goal of the analysis.
 
-    effs <- seq(0, 1, by = 0.1)
+### Power Analysis 
+For instance, if power analysis is the goal, we can begin by simulating a distribution of estimates under the null:
+
+      sims <-
+      simulate(
+        R = 100,
+        N = 100,
+        x = rnorm(N),
+        y = 0 * x + rnorm(N)
+      )
+      
+In the above, I've multiplied `x` by zero to be explicit that I'm imposing a null relationship between `x` and `y` in the data generating process.
+
+The next step is to estimate:
+
+      ests <-
+      estimate(
+        data = sims,
+        y ~ x,
+        vars = "x"
+      )
+
+Finally, we can compute power over a range of possible effect sizes with the `evaluate()` function. By default, the function will assume you want to do a power analysis, which case it returns power over a range of user-specified non-zero effect sizes. This is done by supplying a vector of alternative effect sizes to the `delta` argument:
+
+    effs <- seq(0, 1, by = 0.1) # vector of effect sizes
     pwr <- evalutate(
-      data = ests,
-      delta = effs
+      data = ests, # the dataframe of estimates (assumes truth is zero)
+      delta = effs # the vector of effect sizes
     )
     pwr # look at output
     # # A tibble: 11 x 3
@@ -127,13 +152,15 @@ With a distribution of estimates under the null now estimated, we can compute po
     # 10 x       0.9  1   
     # 11 x       1    1   
 
-The output denotes the calculated power to reject the null hypotheses when the true effect is the effect noted by `delta`. These results can then be easily plotted, used to compute minimum detectable effects, etc. By default, `evaluate()` sets the level of the test for rejecting the null to `level = 0.05`. If you'd like to set a more restrictive, or more modest level, simply specify `level = 0.01` or `level = 0.1` respectively.
+The output shows the calculated power to reject the null hypothesis when the true effect is the effect noted by `delta`. 
 
-In the latest version of `seerrr`, `evaluate()` also supports two new tasks: (1) direct computation of the MDE and (2) summary statistics of the estimator's performance. The former provides a useful shortcut for users to specify an MDE without having to directly identify one from the raw output of `evaluate()`. The latter is helpful for individuals who aren't merely interested in computing power but would like to assess the overall performance of a design, model specification, or estimator---or generally have an interest in doing a Monte Carlo analysis.
+Since the output is a `tibble`, one can seamlessly plot these results or perform other operations on the output.
 
-## Getting the MDE
+By default `evaluate()` sets the level of the test for rejecting the null to `level = 0.05`. If you'd like to set a more restrictive, or more modest level, simply specify `level = 0.01` or `level = 0.1` respectively.
 
-To identify the MDE simply specify `what = "mde"`. `evaluate()` will then return the MDE at the user specified level of power for each relevant term:
+### Getting the MDE
+
+The above approach is useful getting power curves but not so efficient for finding the minimum detectable effect (MDE). Thankfully, by specifying `what = "mde"` `evaluate()` will find and return the MDE at the user specified level of power for you:
 
     evaluate(
       est,
@@ -147,9 +174,12 @@ To identify the MDE simply specify `what = "mde"`. `evaluate()` will then return
 
 This is basically a brute force search over the parameter space of `delta`. How wide or granular the search is determined by the range of values specified for `delta`.
 
-## Monte Carlo
 
-To assess the performance of an estimator, we simply specify `what = "bias"` in evaluate. Say for instance we wanted to assess our ability to correctly identify a true positive effect of `x` on `y` where the true effect size is 1. We would simulate, estimate, and evaluate as follows:
+### Monte Carlo
+
+Sometimes a user may have a more general simulation exercise in mind. This might be related research on the behavior of a specific estimator, understanding the role of bias, or instruction in a statistics course. 
+
+To generally assess the performance of an estimator, we simply specify `what = "bias"` in evaluate. Say for instance we want to assess our ability to correctly identify a true positive effect of `x` on `y` where the true effect size is 1. We would simulate, estimate, and evaluate as follows:
 
     sim <- simulate(
       x = rnorm(N),
@@ -206,7 +236,59 @@ A convenient addition to the `"bias"` option in `evaluate()` is that it is now p
     #1 x              1   0.998  0.00201    0.0451 -0.00236 0.00201    0.96      1
     #2 z              2   2.00   0.00251    0.0450 -0.00181 0.00250    0.915     1
 
-Here, we've added a second predictor variable, `z`, and set its true parameter value to `2`. We can return summary statistics for both `x` and `z` given their true values, `truth = c(1, 2)`.
+Here, we've added a second predictor variable, `z`, and set its true parameter value to `2` by setting `truth = c(1, 2)`. (Note that the order of values in the truth vector matters.)
+
+As another example, say we'd like to illustrate the consequences of omitted variable bias. We could specify a d.g.p. where `y` is a function of `x` plus some "unobserved" variable `u`. In the set-up of the d.g.p., `x` is also a function of `u`:
+
+    sim <- simulate(
+      u = rnorm(N),
+      x = u + rnorm(N),
+      y = x + u + rnorm(N)
+    )
+    
+Since this a simulation, we can compare how including versus not including `u` in our analysis affects our ability to estimate the true relationship between `x` and `y`:
+
+    # with 'u' omitted:
+    est.1 <- estimate(
+      sim,
+      y ~ x,
+      vars = "x",
+      se_type = "stata"
+    )
+    
+    # with 'u' controlled for:
+    est.2 <- estimate(
+      sim,
+      y ~ x + u,
+      vars = "x",
+      se_type = "stata"
+    )
+    
+We can then evaluate both sets of estimates and compare the results:
+    
+    evl.1 <- evaluate(
+      est.1,
+      what = "bias",
+      truth = 1
+    )
+    evl.2 <- evaluate(
+      est.2,
+      what = "bias",
+      truth = 1
+    )
+    tibble(
+      spec = c("'u' omitted", "'u' controlled for")
+    ) %>%
+      bind_cols(
+        bind_rows(evl.1, evl.2)
+      )
+    # A tibble: 2 x 10
+    #  spec               term  true.value average variance std.error     bias     mse coverage power
+    #  <chr>              <fct>      <dbl>   <dbl>    <dbl>     <dbl>    <dbl>   <dbl>    <dbl> <dbl>
+    #1 'u' omitted        x              1   1.49   0.00172    0.0387  0.494   0.246      0         1
+    #2 'u' controlled for x              1   0.997  0.00233    0.0446 -0.00291 0.00232    0.925     1
+
+Simple enough!
 
 # Summary
 
