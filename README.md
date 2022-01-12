@@ -1,19 +1,22 @@
 # seerrr <img src="inst/logo.png" align="right" height="130" />
 
 ![R-version](https://img.shields.io/badge/R%20%3E%3D-3.4.3-brightgreen)
-![updated](https://img.shields.io/badge/last%20update-10--01--2021-brightgreen)
+![updated](https://img.shields.io/badge/last%20update-01--12--2022-brightgreen)
 ![version](https://img.shields.io/badge/version-0.0.1.2100-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-red)
 ![encoding](https://img.shields.io/badge/encoding-UTF--8-red)
 [![orchid](https://img.shields.io/badge/ORCID-0000--0003--0192--5542-brightgreen)](https://orcid.org/0000-0003-0192-5542)
 
-`seerrr` is a package that supports computational power analysis in R. 
+`seerrr` is a package that supports Monte Carlo and computational power analysis in R. 
 
 
 ### Updates
 
   - As of 10/01/2021, it has been updated to also support direct estimation of minimum detectable effects (MDEs) and for evaluating the bias, mean squared error (MSE), coverage, and power of an estimator. 
   - As of 10/15/2021, `estimate()` is now set up to pass any additional user specified commands to the selected estimator function.
+  - As of 01/12/2022, `evaluate()` returns a richer variety of diagnostics when `what = "bias"`, and it allows for different user-specified true parameter values per each parameter of interest.
+  
+# Introduction
 
 The package is constructed around a simple work-flow:
 
@@ -126,7 +129,9 @@ With a distribution of estimates under the null now estimated, we can compute po
 
 The output denotes the calculated power to reject the null hypotheses when the true effect is the effect noted by `delta`. These results can then be easily plotted, used to compute minimum detectable effects, etc. By default, `evaluate()` sets the level of the test for rejecting the null to `level = 0.05`. If you'd like to set a more restrictive, or more modest level, simply specify `level = 0.01` or `level = 0.1` respectively.
 
-In the latest version of `seerrr`, `evaluate()` also supports two new tasks: (1) direct computation of the MDE and (2) summary statistics of the estimator's performance. The former provides a useful shortcut for users to specify an MDE without having to directly identify one from the raw output from `evaluate()`. The latter is helpful for individuals who aren't merely interested in computing power but would like to assess the overall performance of a design, model specification, or estimator.
+In the latest version of `seerrr`, `evaluate()` also supports two new tasks: (1) direct computation of the MDE and (2) summary statistics of the estimator's performance. The former provides a useful shortcut for users to specify an MDE without having to directly identify one from the raw output of `evaluate()`. The latter is helpful for individuals who aren't merely interested in computing power but would like to assess the overall performance of a design, model specification, or estimator---or generally have an interest in doing a Monte Carlo analysis.
+
+## Getting the MDE
 
 To identify the MDE simply specify `what = "mde"`. `evaluate()` will then return the MDE at the user specified level of power for each relevant term:
 
@@ -141,6 +146,8 @@ To identify the MDE simply specify `what = "mde"`. `evaluate()` will then return
     # 1 x      0.15   0.8
 
 This is basically a brute force search over the parameter space of `delta`. How wide or granular the search is determined by the range of values specified for `delta`.
+
+## Monte Carlo
 
 To assess the performance of an estimator, we simply specify `what = "bias"` in evaluate. Say for instance we wanted to assess our ability to correctly identify a true positive effect of `x` on `y` where the true effect size is 1. We would simulate, estimate, and evaluate as follows:
 
@@ -159,14 +166,48 @@ To assess the performance of an estimator, we simply specify `what = "bias"` in 
       truth = 1
     )
     evl # print
-    # # A tibble: 1 x 5
-    #   term        bias     mse coverage power
-    #   <fct>      <dbl>   <dbl>    <dbl> <dbl>
-    # 1 x     -0.0000749 0.00214    0.954     1
+    # A tibble: 2 x 9
+    #  term  true.value  average variance std.error     bias     mse coverage power
+    #  <fct>      <dbl>    <dbl>    <dbl>     <dbl>    <dbl>   <dbl>    <dbl> <dbl>
+    #1 x              1  0.998    0.00174    0.0448 -0.00250 0.00174     0.97  1   
 
-With `what = "bias"`, `evaluate()` now returns the average bias of the estimate for `x`, MSE, coverage (proportion of times the 95 percent CIs overlap with the true effect size), and power to detect the true effect.
+With `what = "bias"`, `evaluate()` will return:
 
+  1. The user-supplied truth value of the parameter of interest;
+  2. The average of parameter estimates produced from the simulation;
+  3. The variance of the simulated parameter estimates;
+  4. The average standard error of the parameter estimate across simulations;
+  5. The average bias of the parameter relative to its true value;
+  6. The mean squared error of the parameter relative to its true value;
+  7. The coverage of the 95 percent confidence intervals with the true parameter value;
+  8. The power, or proportion of times the null is rejected.
+
+A convenient addition to the `"bias"` option in `evaluate()` is that it is now possible to specify a different truth value for multiple parameters if more than one is of interest. For example:
+
+    sim <- simulate(
+      x = rnorm(N),
+      z = rnorm(N),
+      y = x + 2 * z + rnorm(N)
+    )
+    est <- estimate(
+      sim,
+      y ~ x + z,
+      "x"
+    )
+    evl <- evaluate(
+      est,
+      what = "bias",
+      truth = c(1, 2)
+    )
+    evl # print
+    # A tibble: 2 x 9
+    #  term  true.value average variance std.error     bias     mse coverage power
+    #  <fct>      <dbl>   <dbl>    <dbl>     <dbl>    <dbl>   <dbl>    <dbl> <dbl>
+    #1 x              1   0.998  0.00201    0.0451 -0.00236 0.00201    0.96      1
+    #2 z              2   2.00   0.00251    0.0450 -0.00181 0.00250    0.915     1
+
+Here, we've added a second predictor variable, `z`, and set its true parameter value to `2`. We can return summary statistics for both `x` and `z` given their true values, `truth = c(1, 2)`.
 
 # Summary
 
-The power of a computational approach and the specific set of tools provided by `seerrr` is that it permits specifying and computing power for a diverse array of complex designs and data-generating processes without constraining the analyst to a particular set of analytical distributional assumptions as imposed by other existing approaches in `R`. Whatever one can conceive of, `seerrr` "sees all." 
+`seerrr` is not a revolutionary package, but it is a useful one. It streamlines the process of doing a Monte Carlo or computational power analysis by outsourcing much of the programming required for such analyses to its workhorse functions. This frees the analyst to focus on the specifics of the d.g.p., model specification, and inference strategy. Whatever one can conceive of, `seerrr` will help you "see all." 

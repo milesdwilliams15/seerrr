@@ -72,7 +72,7 @@ evaluate <-
         )
       return(mde)
     } else if(what == "bias") {
-      if(truth > 0) {
+      if(length(truth) > 0) {
         if(length(truth)!=length(unique(data$term))) {
           print("True values of parameters does not match the number of parameters.")
           stop()
@@ -84,6 +84,7 @@ evaluate <-
         ) %>%
         dplyr::group_by(.data$term) %>%
         dplyr::summarize(
+          true.value = unique(.data$truth),
           average = mean(.data$estimate),
           variance = var(.data$estimate),
           std.error = mean(.data$std.error),
