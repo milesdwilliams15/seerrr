@@ -95,41 +95,39 @@ By default, `estimate()` relies on `lm_robust()` from the `estimatr` package. An
         estimator = lm
       )
 
-Or, if you would like to modify any of the default settings of `lm_robust`---say you want to change the standard errors to HC1 errors rather than the default HC2---you can simply include that command in `estimate()` and it will pass that command to the estimator function. In `lm_robust` to get HC1 standard errors we simply set `se_type = "stata"`. By specifying this in `estimate` this command gets passed to `lm_robust` "under the hood":
+Or, if you would like to modify any of the default settings of `lm_robust`---say you want to change the standard errors to HC1 errors rather than the default HC2---you can simply include that command in `estimate()` and it will pass that command to the estimator function. For example, to specify that we'd like `lm_robust` to report HC1 standard errors we would write:
 
     estimate(
         data = sims,
         y ~ x,
         vars = "x",
-        se_type = "stata"
+        se_type = "stata" # stata = HC1
       )
 
 ## Types of Evaluation
 The next function in the `seerrr` workflow, `evaluate()`, can be used to return different summary information depending on the goal of the analysis.
 
 ### Power Analysis 
-For instance, if power analysis is the goal, we can begin by simulating a distribution of estimates under the null:
+For instance, if power analysis is the goal, begin by simulating a distribution of estimates under the null:
 
-      sims <-
-      simulate(
-        R = 100,
-        N = 100,
-        x = rnorm(N),
-        y = 0 * x + rnorm(N)
-      )
+      sims <- simulate(
+         R = 100,
+         N = 100,
+         x = rnorm(N),
+         y = 0 * x + rnorm(N)
+       )
       
-In the above, I've multiplied `x` by zero to be explicit that I'm imposing a null relationship between `x` and `y` in the data generating process.
+In the above, I've multiplied `x` by zero to be explicit that I'm imposing a null relationship between `x` and `y` in the data generating process (d.g.p.). It's necessary to set up the d.g.p. in this way because when we pass estimates to the `evaluate()` function it assumes that the true relationship between an explanatory variable and an outcome is zero.
 
 The next step is to estimate:
 
-      ests <-
-      estimate(
+      ests <- estimate(
         data = sims,
         y ~ x,
         vars = "x"
       )
 
-Finally, we can compute power over a range of possible effect sizes with the `evaluate()` function. By default, the function will assume you want to do a power analysis, which case it returns power over a range of user-specified non-zero effect sizes. This is done by supplying a vector of alternative effect sizes to the `delta` argument:
+Finally, we can compute power over a range of possible effect sizes with the `evaluate()` function. By default, the function will assume you want to do a power analysis, in which case it returns power over a range of user-specified non-zero effect sizes. This is done by supplying a vector of alternative effect sizes to the `delta` argument:
 
     effs <- seq(0, 1, by = 0.1) # vector of effect sizes
     pwr <- evalutate(
@@ -156,11 +154,11 @@ The output shows the calculated power to reject the null hypothesis when the tru
 
 Since the output is a `tibble`, one can seamlessly plot these results or perform other operations on the output.
 
-By default `evaluate()` sets the level of the test for rejecting the null to `level = 0.05`. If you'd like to set a more restrictive, or more modest level, simply specify `level = 0.01` or `level = 0.1` respectively.
+By default, `evaluate()` sets the level of the test for rejecting the null to `level = 0.05`. If you'd like to set a more restrictive, or more modest level, you could specify `level = 0.01` or `level = 0.1` respectively. The `level` option will accept any real valued number between 0 and 1.
 
 ### Getting the MDE
 
-The above approach is useful getting power curves but not so efficient for finding the minimum detectable effect (MDE). Thankfully, by specifying `what = "mde"` `evaluate()` will find and return the MDE at the user specified level of power for you:
+The above approach is useful for computing power curves but not so efficient for finding the minimum detectable effect (MDE). Thankfully, by specifying `what = "mde"` `evaluate()` will find and return the MDE at the user specified level of power for you:
 
     evaluate(
       est,
@@ -177,7 +175,7 @@ This is basically a brute force search over the parameter space of `delta`. How 
 
 ### Monte Carlo
 
-Sometimes a user may have a more general simulation exercise in mind. This might be related research on the behavior of a specific estimator, understanding the role of bias, or instruction in a statistics course. 
+Sometimes a user may have a more general simulation exercise in mind. This might be related research on the behavior of a specific estimator, understanding the role of bias, or for illustration in a statistics course. 
 
 To generally assess the performance of an estimator, we simply specify `what = "bias"` in evaluate. Say for instance we want to assess our ability to correctly identify a true positive effect of `x` on `y` where the true effect size is 1. We would simulate, estimate, and evaluate as follows:
 
@@ -236,14 +234,19 @@ A convenient addition to the `"bias"` option in `evaluate()` is that it is now p
     #1 x              1   0.998  0.00201    0.0451 -0.00236 0.00201    0.96      1
     #2 z              2   2.00   0.00251    0.0450 -0.00181 0.00250    0.915     1
 
-Here, we've added a second predictor variable, `z`, and set its true parameter value to `2` by setting `truth = c(1, 2)`. (Note that the order of values in the truth vector matters.)
+Here, we've added a second predictor variable, `z`, and set its true parameter value to `2` in the d.g.p. We then tell `evaluate()` the true values of each of the parameters of interest by setting `truth = c(1, 2)`. (Note that the order of values in the truth vector matters.)
 
-As another example, say we'd like to illustrate the consequences of omitted variable bias. We could specify a d.g.p. where `y` is a function of `x` plus some "unobserved" variable `u`. In the set-up of the d.g.p., `x` is also a function of `u`:
+
+## A Hypothetical Application
+
+To demonstrate the usefulness of `seerrr`, consider a hypothetical classroom setting where an instructor would like to illustrate the consequences of omitted variable bias. 
+
+An example can be easily contrived by specifying a d.g.p. where `y` is a function of `x` plus some "unobserved" variable `u`. In the set-up of the d.g.p., `x` is also a function of `u`:
 
     sim <- simulate(
-      u = rnorm(N),
-      x = u + rnorm(N),
-      y = x + u + rnorm(N)
+      u = rnorm(N),        # unobserved confounder
+      x = u + rnorm(N),    # predictor of interest
+      y = x + u + rnorm(N) # the outcome
     )
     
 Since this a simulation, we can compare how including versus not including `u` in our analysis affects our ability to estimate the true relationship between `x` and `y`:
@@ -287,6 +290,8 @@ We can then evaluate both sets of estimates and compare the results:
     #  <chr>              <fct>      <dbl>   <dbl>    <dbl>     <dbl>    <dbl>   <dbl>    <dbl> <dbl>
     #1 'u' omitted        x              1   1.49   0.00172    0.0387  0.494   0.246      0         1
     #2 'u' controlled for x              1   0.997  0.00233    0.0446 -0.00291 0.00232    0.925     1
+
+The evaluation summary for each model specification clearly shows that failing to account for `u` leads to increased bias in the estimate of `x`'s relationship with `y`.
 
 Simple enough!
 
